@@ -8,6 +8,10 @@ inputs:
     description: "Yosys package release to install (for example 0.71). Defaults to the latest package release."
     required: false
     default: latest
+  ubuntu-version:
+    description: "Ubuntu asset to use (`auto` = match the runner VERSION_ID, usually 26.04 on ubuntu-latest)."
+    required: false
+    default: auto
 runs:
   using: composite
   steps:
@@ -17,12 +21,23 @@ runs:
         set -euo pipefail
         # shellcheck disable=SC1091
         . /etc/os-release
-        if [ "${ID:-}" != "ubuntu" ] || [ "${VERSION_ID:-}" != "24.04" ]; then
-          echo "setup-yosys supports ubuntu-24.04 only (this runner is ${ID:-unknown} ${VERSION_ID:-unknown})" >&2
+        if [ "${ID:-}" != "ubuntu" ]; then
+          echo "setup-yosys supports Ubuntu only (this runner is ${ID:-unknown})" >&2
           exit 1
         fi
+        ubuntu="${{ inputs.ubuntu-version }}"
+        if [ "$ubuntu" = "auto" ]; then
+          ubuntu="${VERSION_ID:-}"
+        fi
+        case "$ubuntu" in
+          24.04|26.04) ;;
+          *)
+            echo "setup-yosys supports ubuntu-24.04 and ubuntu-26.04 (requested ${ubuntu})" >&2
+            exit 1
+            ;;
+        esac
         version="${{ inputs.version }}"
-        asset="yosys-ubuntu-24.04.tar.gz"
+        asset="yosys-ubuntu-${ubuntu}.tar.gz"
         if [ "$version" = "latest" ]; then
           url="https://github.com/daxzio/yosys-package/releases/latest/download/${asset}"
         else
