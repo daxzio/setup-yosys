@@ -1,0 +1,42 @@
+name: setup-yosys
+description: Install a prebuilt Yosys binary
+branding:
+  color: purple
+  icon: cpu
+inputs:
+  version:
+    description: "Yosys package release to install (for example 0.71). Defaults to the latest package release."
+    required: false
+    default: latest
+runs:
+  using: composite
+  steps:
+    - name: Install Yosys
+      shell: bash
+      run: |
+        set -euo pipefail
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        if [ "${ID:-}" != "ubuntu" ] || [ "${VERSION_ID:-}" != "24.04" ]; then
+          echo "setup-yosys supports ubuntu-24.04 only (this runner is ${ID:-unknown} ${VERSION_ID:-unknown})" >&2
+          exit 1
+        fi
+        version="${{ inputs.version }}"
+        asset="yosys-ubuntu-24.04.tar.gz"
+        if [ "$version" = "latest" ]; then
+          url="https://github.com/daxzio/yosys-package/releases/latest/download/${asset}"
+        else
+          url="https://github.com/daxzio/yosys-package/releases/download/${version}/${asset}"
+        fi
+        dest="${RUNNER_TEMP}/yosys"
+        rm -rf "$dest"
+        mkdir -p "$dest"
+        curl -fsSL "$url" | tar -xz -C "$dest"
+        if [ ! -x "$dest/bin/yosys" ]; then
+          echo "archive from ${url} did not contain bin/yosys" >&2
+          exit 1
+        fi
+        echo "$dest/bin" >> "$GITHUB_PATH"
+        if [ -d "$dest/share/yosys" ]; then
+          echo "YOSYS_DATDIR=$dest/share/yosys" >> "$GITHUB_ENV"
+        fi

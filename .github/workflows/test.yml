@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Yosys
+        uses: ./
+        with:
+          version: "0.71"
+
+      - name: Report version
+        run: |
+          yosys -V
+          yosys -V | grep -F "Yosys 0.71"
+
+      - name: Smoke synth
+        run: |
+          cat > t.v << 'EOF'
+          module t(input wire a, output wire y);
+            assign y = ~a;
+          endmodule
+          EOF
+          yosys -p "read_verilog t.v; synth; stat" | grep -F "Number of cells"
