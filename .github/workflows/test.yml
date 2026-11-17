@@ -31,4 +31,4 @@ jobs:
             assign y = ~a;
           endmodule
           EOF
-          yosys -p "read_verilog t.v; synth; stat" | grep -F "Number of cells"
+          yosys -p "read_verilog t.v; hierarchy; proc; synth; stat" | grep -F "1 cells"
